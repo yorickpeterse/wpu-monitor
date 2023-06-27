@@ -47,5 +47,5 @@ wpu_source supply_temp=$from_src_temp,return_temp=$to_src_temp,pump_speed=$well_
 wpu_cv supply_temp=$cv_supply_temp,return_temp=$cv_return_temp,pump_speed=$cv_pump_speed,pressure=$cv_pressure
 wpu_room temp=$room_temp
 wpu status=$system_status" | ncat --udp $DB_IP $DB_PORT
-    sleep 60
+    sleep 30
 end
