@@ -33,6 +33,7 @@ while true
     set cv_supply_temp (echo $data | jq '."CV supply temp (°C)"')
     set cv_return_temp (echo $data | jq '."CV return temp (°C)"')
     set room_temp (echo $data | jq '."Room temp (°C)"')
+    set req_room_temp (echo $data | jq '."Requested room temp (°C)"')
 
     set cv_pressure (echo $data | jq '."CV pressure (Bar)"')
     set flow_hour (echo $data | jq '."Flow sensor (lt_hr)"')
@@ -45,7 +46,7 @@ while true
 wpu_liquid temp=$liquid_temp,flow_rate=$flow_hour
 wpu_source supply_temp=$from_src_temp,return_temp=$to_src_temp,pump_speed=$well_pump_speed
 wpu_cv supply_temp=$cv_supply_temp,return_temp=$cv_return_temp,pump_speed=$cv_pump_speed,pressure=$cv_pressure
-wpu_room temp=$room_temp
+wpu_room temp=$room_temp,target_temp=$req_room_temp
 wpu status=$system_status" | ncat --udp $DB_IP $DB_PORT
     sleep 30
 end
