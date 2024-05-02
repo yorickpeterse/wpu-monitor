@@ -1,9 +1,5 @@
 #!/usr/bin/env fish
 
-function info
-    echo "$(date --iso-8601=seconds): $argv"
-end
-
 function http_get
     curl --fail \
         --show-error \
@@ -14,14 +10,14 @@ function http_get
 end
 
 function update_temp
-    info 'Updating outside temperature'
+    echo 'Updating outside temperature'
     set temp (
         http_get 'https://data.buienradar.nl/2.0/feed/json' \
             | jq ".actual.stationmeasurements[] | select(.stationid == $WEATHER_STATION_ID) | .temperature | ceil"
     )
 
     http_get "http://$ITHO_IP/api.html?outside_temp=$temp" >/dev/null
-    info "New outside temperature: $temp"C
+    echo "New outside temperature: $temp"C
 end
 
 function update_stats
