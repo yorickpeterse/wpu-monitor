@@ -1,5 +1,5 @@
-FROM alpine:3
+FROM registry.fedoraproject.org/fedora-minimal:latest AS builder
 
-RUN apk add --update nmap-ncat fish curl jq
+RUN microdnf install --quiet --assumeyes nmap-ncat fish curl jq
 ADD monitor.fish /monitor.fish
 CMD ["/usr/bin/fish", "monitor.fish"]
