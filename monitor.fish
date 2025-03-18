@@ -1,5 +1,10 @@
 #!/usr/bin/env fish
 
+set temp_interval 3600
+set temp_pending 0
+set sleep_interval 60
+set override_temp 20
+
 function http_get
     curl --fail \
         --show-error \
@@ -11,13 +16,26 @@ end
 
 function update_temp
     echo 'Updating outside temperature'
-    set temp (
+    set outside_temp (
         http_get 'https://data.buienradar.nl/2.0/feed/json' \
             | jq ".actual.stationmeasurements[] | select(.stationid == $WEATHER_STATION_ID) | .temperature | ceil"
     )
+    set itho_data (http_get "http://$ITHO_IP/api.html?get=ithostatus")
+    set room_temp (echo $itho_data | jq '.data.ithostatus."Room temp (°C)"')
+    set req_room_temp (echo $itho_data | jq '.data.ithostatus."Requested room temp (°C)"')
+    set min_temp (math "$req_room_temp - 0.5")
+    set hour (date +%H)
 
-    http_get "http://$ITHO_IP/api.html?outside_temp=$temp" >/dev/null
-    echo "New outside temperature: $temp"C
+    # At night we try to defer heating by reporting a higher outdoor
+    # temperature, provided it's not getting too cold.
+    if test $hour -ge 2 && test $hour -le 8 && test $room_temp -ge $min_temp && test $outside_temp -ge -5
+        echo "Overriding outside temperature to $override_temp""C, real temperature: $outside_temp"C
+        set outside_temp $override_temp
+    else
+        echo "New outside temperature: $outside_temp"C
+    end
+
+    http_get "http://$ITHO_IP/api.html?outside_temp=$outside_temp" >/dev/null
 end
 
 function update_stats
@@ -64,10 +82,6 @@ if ! test -n "$DB_PORT"
     echo 'The DB_PORT variable must be set'
     exit 1
 end
-
-set temp_interval 3600
-set temp_pending 0
-set sleep_interval 60
 
 while true
     if test -n "$WEATHER_STATION_ID"
