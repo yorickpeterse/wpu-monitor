@@ -28,7 +28,11 @@ function update_temp
 
     # At night we try to defer heating by reporting a higher outdoor
     # temperature, provided it's not getting too cold.
-    if test $hour -ge 2 && test $hour -le 8 && test $room_temp -ge $min_temp && test $outside_temp -ge -5
+    if test $hour -ge 2 &&
+            test $hour -le 8 &&
+            test $room_temp -ge $min_temp &&
+            test $outside_temp -ge -5 &&
+            test $outside_temp -le 15
         echo "Overriding outside temperature to $override_temp""C, real temperature: $outside_temp"C
         set outside_temp $override_temp
     else
