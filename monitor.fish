@@ -3,7 +3,17 @@
 set temp_interval 3600
 set temp_pending 0
 set sleep_interval 60
-set override_temp 20
+set heating_enabled true
+set heating_last_enabled 0
+
+function log
+    # Log messages should go to STDERR.
+    echo $argv 1>&2
+end
+
+function timestamp
+    date +%s
+end
 
 function http_get
     curl --fail \
@@ -14,8 +24,18 @@ function http_get
         $argv
 end
 
+function disable_heating
+    mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
+        -m '{ "manual_operation_index": 30, "manual_operation_datatype": 0, "manual_operation_value": 0, "manual_operation_checked": 1 }'
+end
+
+function enable_heating
+    mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
+        -m '{ "manual_operation_index": 30, "manual_operation_datatype": 0, "manual_operation_value": 0, "manual_operation_checked": 0 }'
+end
+
 function update_temp
-    echo 'Updating outside temperature'
+    log 'Updating outside temperature'
     set outside_temp (
         http_get 'https://data.buienradar.nl/2.0/feed/json' \
             | jq ".actual.stationmeasurements[] | select(.stationid == $WEATHER_STATION_ID) | .temperature | ceil"
@@ -23,22 +43,32 @@ function update_temp
     set itho_data (http_get "http://$ITHO_IP/api.html?get=ithostatus")
     set room_temp (echo $itho_data | jq '.data.ithostatus."Room temp (°C)"')
     set req_room_temp (echo $itho_data | jq '.data.ithostatus."Requested room temp (°C)"')
-    set min_temp (math "$req_room_temp - 0.5")
+    set min_temp (math "$req_room_temp - 1.5")
     set hour (date +%H)
 
-    # At night we try to defer heating by reporting a higher outdoor
-    # temperature, provided it's not getting too cold.
-    if test $hour -ge 2 &&
+    # At night heating is disabled _unless_ it gets too cold. This way heating
+    # either doesn't need to run because the morning sun warms up the house, or
+    # it can run on the excess solar energy (if there's any).
+    if test $hour -ge 0 &&
             test $hour -le 8 &&
             test $room_temp -ge $min_temp &&
-            test $outside_temp -ge -5 &&
-            test $outside_temp -le 15
-        echo "Overriding outside temperature to $override_temp""C, real temperature: $outside_temp"C
-        set outside_temp $override_temp
-    else
-        echo "New outside temperature: $outside_temp"C
+            test $outside_temp -ge -5
+        # We don't disable heating if we recently re-enabled it, such that we
+        # don't ping-pong between enabling and disabling heating.
+        if $heating_enabled &&
+                test (math (timestamp)" - $heating_last_enabled") -ge 10800
+            log "Disabling heating at night, indoor temperature: $room_temp""C, outdoor temperature: $outside_temp"C
+            disable_heating
+            set heating_enabled false
+        end
+    else if ! $heating_enabled
+        log 'Re-enabling heating'
+        enable_heating
+        set heating_enabled true
+        set heating_last_enabled (timestamp)
     end
 
+    log "New outside temperature: $outside_temp"C
     http_get "http://$ITHO_IP/api.html?outside_temp=$outside_temp" >/dev/null
 end
 
@@ -72,18 +102,28 @@ wpu_outside temp=$outside_temp
 wpu status=$system_status" | ncat --udp $DB_IP $DB_PORT
 end
 
-if ! test -n "$ITHO_IP"
-    echo 'The ITHO_IP variable must be set'
+if ! test -n $ITHO_IP
+    log 'The ITHO_IP variable must be set'
     exit 1
 end
 
-if ! test -n "$DB_IP"
-    echo 'The DB_IP variable must be set'
+if ! test -n $DB_IP
+    log 'The DB_IP variable must be set'
     exit 1
 end
 
-if ! test -n "$DB_PORT"
-    echo 'The DB_PORT variable must be set'
+if ! test -n $DB_PORT
+    log 'The DB_PORT variable must be set'
+    exit 1
+end
+
+if ! test -n $MQTT_IP
+    log 'The MQTT_IP variable must be set'
+    exit 1
+end
+
+if ! test -n $MQTT_TOPIC
+    log 'The MQTT_TOPIC variable must be set'
     exit 1
 end
 
