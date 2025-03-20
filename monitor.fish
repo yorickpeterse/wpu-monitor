@@ -97,6 +97,11 @@ function update_stats
     set well_pump_speed (echo $data | jq '.data.ithostatus."Well pump (%)"')
     set boiler_pump_speed (echo $data | jq '.data.ithostatus."Boiler pump (%)"')
     set system_status (echo $data | jq '.data.ithostatus."Status"')
+    set manual (echo $data | jq '.data.ithostatus."Manual operation"')
+
+    if test $manual -eq 1
+        set system_status 6
+    end
 
     echo "wpu_boiler temp_up=$boiler_temp_up,temp_down=$boiler_temp_down,pump_speed=$boiler_pump_speed
 wpu_liquid temp=$liquid_temp,flow_rate=$flow_hour
