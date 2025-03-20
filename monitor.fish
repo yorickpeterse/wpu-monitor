@@ -32,6 +32,11 @@ end
 function enable_heating
     mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
         -m '{ "manual_operation_index": 30, "manual_operation_datatype": 0, "manual_operation_value": 0, "manual_operation_checked": 0 }'
+
+    # If we don't explicitly reset the error status, the thermostat will keep
+    # complaining about it with an A1-16 error code.
+    mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
+        -m '{ "manual_operation_index": 37, "manual_operation_datatype": 0, "manual_operation_value": 1, "manual_operation_checked": 0 }'
 end
 
 function update_temp
