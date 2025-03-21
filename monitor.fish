@@ -33,6 +33,12 @@ function enable_heating
     mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
         -m '{ "manual_operation_index": 30, "manual_operation_datatype": 0, "manual_operation_value": 0, "manual_operation_checked": 0 }'
 
+    # It seems that when rapidly sending these messages they're lost, so we wait
+    # a little bit
+    info 'Waiting for the WiFi module to process the message'
+    sleep 15
+    info 'Resetting faults'
+
     # If we don't explicitly reset the error status, the thermostat will keep
     # complaining about it with an A1-16 error code.
     mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
