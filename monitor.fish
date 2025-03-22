@@ -105,17 +105,13 @@ function update_stats
     set system_status (echo $data | jq '.data.ithostatus."Status"')
     set manual (echo $data | jq '.data.ithostatus."Manual operation"')
 
-    if test $manual -eq 1
-        set system_status 6
-    end
-
     echo "wpu_boiler temp_up=$boiler_temp_up,temp_down=$boiler_temp_down,pump_speed=$boiler_pump_speed
 wpu_liquid temp=$liquid_temp,flow_rate=$flow_hour
 wpu_source supply_temp=$from_src_temp,return_temp=$to_src_temp,pump_speed=$well_pump_speed
 wpu_cv supply_temp=$cv_supply_temp,return_temp=$cv_return_temp,pump_speed=$cv_pump_speed,pressure=$cv_pressure
 wpu_room temp=$room_temp,target_temp=$req_room_temp
 wpu_outside temp=$outside_temp
-wpu status=$system_status" | ncat --udp $DB_IP $DB_PORT
+wpu status=$system_status,manual_mode=$manual" | ncat --udp $DB_IP $DB_PORT
 end
 
 if ! test -n $ITHO_IP
