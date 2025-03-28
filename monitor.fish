@@ -35,9 +35,9 @@ function enable_heating
 
     # It seems that when rapidly sending these messages they're lost, so we wait
     # a little bit
-    info 'Waiting for the WiFi module to process the message'
+    log 'Waiting for the WiFi module to process the message'
     sleep 15
-    info 'Resetting faults'
+    log 'Resetting faults'
 
     # If we don't explicitly reset the error status, the thermostat will keep
     # complaining about it with an A1-16 error code.
