@@ -47,6 +47,8 @@ function enable_heating
         mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
             -m '{ "manual_operation_index": 37, "manual_operation_datatype": 0, "manual_operation_value": 1, "manual_operation_checked": 0 }'
 
+        log 'Waiting for the WiFi module to reset the status'
+        sleep 30
         set data (http_get "http://$ITHO_IP/api.html?get=ithostatus")
         set error (echo $data | jq '.data.ithostatus."Error_found"')
 
