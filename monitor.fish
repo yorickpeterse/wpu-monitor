@@ -1,6 +1,6 @@
 #!/usr/bin/env fish
 
-set temp_interval 3600
+set temp_interval 1800
 set temp_pending 0
 set sleep_interval 60
 set heating_enabled true
@@ -82,7 +82,7 @@ function update_temp
     # either doesn't need to run because the morning sun warms up the house, or
     # it can run on the excess solar energy (if there's any).
     if test $hour -ge 0 &&
-            test $hour -le 8 &&
+            test $hour -le 9 &&
             test $room_temp -ge $min_temp &&
             test $outside_temp -ge -5
         # We don't disable heating if we recently re-enabled it, such that we
