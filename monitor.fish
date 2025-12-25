@@ -84,7 +84,7 @@ function update_temp
     if test $hour -ge 0 &&
             test $hour -le 9 &&
             test $room_temp -ge $min_temp &&
-            test $outside_temp -ge -5
+            test $outside_temp -ge 0
         # We don't disable heating if we recently re-enabled it, such that we
         # don't ping-pong between enabling and disabling heating.
         if $heating_enabled &&
