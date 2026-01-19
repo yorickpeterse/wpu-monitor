@@ -30,31 +30,27 @@ function disable_heating
 end
 
 function enable_heating
-    mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
-        -m '{ "manual_operation_index": 30, "manual_operation_datatype": 0, "manual_operation_value": 0, "manual_operation_checked": 0 }'
-
-    # It seems that when rapidly sending these messages they're lost, so we wait
-    # a little bit
-    log 'Waiting for the WiFi module to process the message'
-    sleep 30
-    log 'Resetting error status'
-
     # If we don't explicitly reset the error status, the thermostat will keep
     # complaining about it with an A1-16 error code.
-    set attempts 5
+    set attempts 10
 
     while test $attempts -gt 0
+        log 'Disabling manual operation'
+        mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
+            -m '{ "manual_operation_index": 30, "manual_operation_datatype": 0, "manual_operation_value": 0, "manual_operation_checked": 0 }'
+        sleep 60
+
+        log 'Resetting error status'
         mosquitto_pub -h $MQTT_IP -t $MQTT_TOPIC"/cmd" \
             -m '{ "manual_operation_index": 37, "manual_operation_datatype": 0, "manual_operation_value": 1, "manual_operation_checked": 0 }'
+        sleep 60
 
-        log 'Waiting for the WiFi module to reset the status'
-        sleep 30
         set data (http_get "http://$ITHO_IP/api.html?get=ithostatus")
         set error (echo $data | jq '.data.ithostatus."Error_found"')
 
         if test $error -eq 1
             log 'Error status not reset, trying again'
-            sleep 30
+            sleep 60
         else
             log 'Error status reset'
             return
