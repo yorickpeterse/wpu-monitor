@@ -68,6 +68,12 @@ function update_temp
         http_get 'https://data.buienradar.nl/2.0/feed/json' \
             | jq ".actual.stationmeasurements[] | select(.stationid == $WEATHER_STATION_ID) | .temperature | ceil"
     )
+
+    if [ "$outside_temp" = "" ]
+        log 'Buienradar returned an error, not updating temperature'
+        return
+    end
+
     set itho_data (http_get "http://$ITHO_IP/api.html?get=ithostatus")
     set room_temp (echo $itho_data | jq '.data.ithostatus."Room temp (°C)"')
     set req_room_temp (echo $itho_data | jq '.data.ithostatus."Requested room temp (°C)"')
